@@ -7,6 +7,11 @@
 #include <vector>
 #include <utility>
 
+template<typename T>
+void debugprint(T t) {
+	//std::cout << t << std::endl;
+}
+
 enum class Dir : int {
 	right = 0 ,
 	left,
@@ -22,36 +27,238 @@ std::pair<int, int> operator+ (std::pair<int, int>& a, std::pair<int, int>& b) {
 	return std::pair<int, int>{a.first + b.first, a.second + b.second};
 }
 
+class distenceboard {
+public:
+	distenceboard(int size) {
+		bo = std::vector<std::vector<std::pair<int, bool>>>(size, std::vector<std::pair<int, bool>>(size, { -1 ,false}));
+	}
+
+	int getDis(const std::pair<int, int>& pos) {
+		return bo[pos.first - 1][pos.second - 1].first;
+	}
+
+	void setDis(const std::pair<int, int>& pos, int data) {
+		bo[pos.first - 1][pos.second - 1].first = data;
+	}
+
+	bool getS(const std::pair<int, int>& pos) {
+		return bo[pos.first - 1][pos.second - 1].second;
+	}
+
+	void setS(const std::pair<int, int>& pos, bool data) {
+		bo[pos.first - 1][pos.second - 1].second = data;
+	}
+
+	distenceboard(distenceboard&) = default;
+	distenceboard(distenceboard&&) = default;
+	distenceboard& operator= (distenceboard&) = default;
+	distenceboard& operator= (distenceboard&&) = default;
+
+
+	void print() {
+		for (auto& e : bo) {
+			for (auto& c : e) {
+				std::cout << c.first;
+			}
+			std::cout << std::endl;
+		}
+	}
+
+	std::vector<std::vector<std::pair<int,bool>>> bo;
+};
+
+
+
+
 class board {
 	
 public :
 	board() {
+		int customsnum;
 		std::cin >> size;
+		std::cin >> customsnum;
+		std::cin >> energy;
 
-		int applecount;
-		std::cin >> applecount;
-		apples = std::vector<std::pair<int, int>>( applecount ,std::pair<int,int>(0,0));
-		for (auto& apple : apples) {
-			std::cin >> apple.first;
-			std::cin >> apple.second;
+		bo = std::vector<std::vector<int>>( size, std::vector<int>(size,0) );
+
+		for (auto& e : bo) {
+			for (auto& i : e) {
+				std::cin >> i;
+			}
 		}
+		std::cin >> taxi.first;
+		std::cin >> taxi.second;
 
-		int movecount;
-		std::cin >> movecount;
+		customers = std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>(customsnum);
+
+		for (auto& cu : customers) {
+			std::cin >> cu.first.first;
+			std::cin >> cu.first.second;
+			std::cin >> cu.second.first;
+			std::cin >> cu.second.second;
+
+			//set(cu.first.first, cu.first.second, 2);
+		}
+	}
+
+	std::pair<std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>::iterator,int> findcustomer(const std::pair<int, int>& start) {
 		
-		for (int i = 0; i < movecount; i++) {
-			int turn;
-			char direction;
+		distenceboard db(size);
+		std::vector<std::pair<int, int>> Q{};
 
-			std::cin >> turn;
-			std::cin >> direction;
-			moves.push(std::pair<int, char>(turn, direction));
+		db.setDis(start, 0);
+		Q.push_back(start);
+		while (Q.size() > 0) {
+
+			std::vector<std::pair<int, int>>::iterator now;
+			now = Q.begin();
+			int min = db.getDis(now[0]);
+			for (auto s = Q.begin(); s != Q.end(); s++) {
+				if (min > db.getDis(s[0])) {
+					min = db.getDis(s[0]);
+					now = s;
+				}
+			}
+
+			if (now == Q.end()) {
+				return { customers.end(),-1 };
+			}
+
+			std::vector<std::pair<int, int>> tmp{};
+
+			for (auto& dir : directions) {
+				auto next = now[0] + dir;
+				if (next.first > 0 && next.first <= size && next.second > 0 && next.second <= size) {
+
+					if (db.getS(now[0])) {
+						continue;
+					}
+
+					if (get(next) != 1) {
+						int nowdis = db.getDis(now[0]);
+						if ((db.getDis(next) == -1) || (db.getDis(next) > (nowdis + 1))) {
+							db.setDis(next, nowdis + 1);
+						}
+
+						if (std::find_if(Q.begin(), Q.end(), [&, Q](std::pair<int, int>& a) {return (a.first == next.first) && (a.second == next.second); }) == Q.end()) {
+							tmp.push_back(next);
+						}
+					}
+
+				}
+			}
+
+
+
+			db.setS(now[0], true);
+			Q.erase(now);
+
+			for (auto& i : tmp) {
+				Q.push_back(i);
+			}
 		}
 
-		snake.push_back({ 1,1 });
+		//db.print();
 
-		dir = Dir::right;
-		time = 0;
+		int min = db.getDis(customers.begin()[0].first);
+		auto mincu = customers.begin();
+
+		for (auto cu = customers.begin(); cu != customers.end(); cu++) {
+			if (min > db.getDis(cu[0].first)) {
+				min = db.getDis(cu[0].first);
+				mincu = cu;
+			}
+			else if (min == db.getDis(cu[0].first)) {
+				if (mincu[0].first > cu[0].first) {
+					min = db.getDis(cu[0].first);
+					mincu = cu;
+				}
+				else if (mincu[0].first == cu[0].first) {
+					if (mincu[0].second > cu[0].second) {
+						min = db.getDis(cu[0].first);
+						mincu = cu;
+					}
+				}
+			}
+		}
+
+		if (min > energy) {
+			return { customers.end(),-1 };
+		}
+		else
+		{
+			return {mincu, min};
+		}
+
+
+	}
+
+	int findroute(const std::pair<int,int>& start, const std::pair<int, int>& dest,int energy) {
+		distenceboard db(size);
+		std::vector<std::pair<int, int>> Q{};
+		
+		db.setDis(start, 0);
+		Q.push_back(start);
+		while (Q.size() > 0) {
+
+			std::vector<std::pair<int, int>>::iterator now;
+			now = Q.begin();
+			int min = db.getDis(now[0]);
+			for (auto s = Q.begin(); s != Q.end(); s++) {
+				if (min > db.getDis(s[0]) ){
+					min = db.getDis(s[0]);
+					now = s;
+				}
+			}
+
+			if (now == Q.end()) {
+				return -1;
+			}
+
+			std::vector<std::pair<int, int>> tmp{};
+
+			for (auto& dir : directions) {
+				auto next = now[0] + dir;
+				if (next.first > 0 && next.first <= size && next.second > 0 && next.second <= size) {	
+
+					if (db.getS(now[0])) {
+						continue;
+					}
+
+					if (get(next) != 1) {
+						int nowdis = db.getDis(now[0]);
+						if ((db.getDis(next) == -1) || (db.getDis(next) > (nowdis + 1))) {
+							db.setDis(next, nowdis + 1);
+						}
+
+						if (std::find_if(Q.begin(), Q.end(), [&, Q](std::pair<int, int>& a) {return (a.first == next.first) && (a.second == next.second); }) == Q.end()) {
+							tmp.push_back(next);
+						}
+					}
+
+				}
+			}
+
+
+
+			db.setS(now[0], true);
+			Q.erase(now);
+
+			for (auto& i : tmp) {
+				Q.push_back(i);
+			}
+		}
+
+		//db.print();
+
+		int consume = db.getDis(dest);
+
+		if (consume > energy) {
+			return -1;
+		}
+		else {
+			return consume;
+		}
 	}
 
 	
@@ -60,143 +267,78 @@ public :
 	board& operator= (board&) = default;
 	board& operator= (board&&) = default;
 
-	/*
+	
 	void print() {
 		for (auto& e : bo) {
-			for (char& c : e) {
+			for (auto& c : e) {
 				std::cout << c;
 			}
 			std::cout << std::endl;
 		}
-	}*/
-
-	bool next() {
-		time += 1;
-		auto& head = snake.back();
-		std::pair<int, int> newhead;
-
-		switch (dir)
-		{
-		case Dir::right:
-			newhead = head + right;
-			break;
-		case Dir::left:
-			newhead = head + left;
-			break;
-		case Dir::up:
-			newhead = head + up;
-			break;
-		case Dir::down:
-			newhead = head + down;
-			break;
-		default:
-			break;
-		}
-
-		if (!isin(newhead)) {
-			return false;
-		}
-
-		bool appleeat = false;
-		for (auto apple = apples.begin(); apple != apples.end();apple++) {
-			if (apple[0] == newhead) {
-				appleeat = true;
-				apples.erase(apple);
-				break;
-			}
-		}
-
-		if (isselfblock(newhead, snake)) {
-			return false;
-		}
-
-		if (!appleeat) {
-			snake.erase(snake.begin());
-		}
-		
-
-		snake.push_back(newhead);
-
-		return true;
-		
 	}
-	
-	bool isin(const std::pair<int, int>& a) {
-		return (a.first <= size) && (a.first > 0) && (a.second <= size) && (a.second > 0);
+
+	int get(const std::pair<int, int>& pos) {
+		return get(pos.first, pos.second);
+	}
+
+	void set(const std::pair<int, int>& pos, int data) {
+		set(pos.first, pos.second, data);
 	}
 
 	
+	int get(int a, int b) {
+		return bo[a - 1][b - 1];
+	}
 
-	bool isselfblock(const std::pair<int, int>& newhead, const std::vector<std::pair<int, int>>& body) {
-		for (auto& block : body) {
-			if (block == newhead) {
-				return true;
-			}
-		}
-		return false;
+	void set(int a, int b, int data) {
+		bo[a - 1][b - 1] = data;
 	}
 
 	int simulateall() {
-		while (next()) {
-			if ((!moves.empty()) && moves.front().first == time) {
-				switch (dir)
-				{
-				case Dir::right:
-					if (moves.front().second == 'D') {
-						dir = Dir::down;
-					}
-					else {
-						dir = Dir::up;
-					}
-					break;
-				case Dir::left:
-					if (moves.front().second == 'D') {
-						dir = Dir::up;
-					}
-					else {
-						dir = Dir::down;
-					}
-					break;
-				case Dir::up:
-					if (moves.front().second == 'D') {
-						dir = Dir::right;
-					}
-					else {
-						dir = Dir::left;
-					}
-					break;
-				case Dir::down:
-					if (moves.front().second == 'D') {
-						dir = Dir::left;
-					}
-					else {
-						dir = Dir::right;
-					}
-					break;
-				default:
-					break;
-				}
+		while (!customers.empty()) {
+			auto a = findcustomer(taxi);
+			auto& cus = a.first;
+			int consumed = a.second;
 
-				moves.pop();
+			//debugprint(consumed);
+
+			if (consumed == -1) {
+				return -1;
 			}
+
+			taxi = cus[0].first;
+			energy -= consumed;
+
+			int consumewithcustomer = findroute(taxi, cus[0].second,energy);
+			//debugprint(consumewithcustomer);
+			if (consumewithcustomer == -1) {
+				return -1;
+			}
+			
+			energy += consumewithcustomer;
+
+			taxi = cus[0].second;
+			customers.erase(cus);
 		}
 
-		return time;
+		return energy;
 	}
 
 
 private:
+	std::vector<std::vector<int>> bo;
 	int size;
-	std::vector<std::pair<int, int>> snake;
-	std::vector<std::pair<int, int>> apples;
-	std::queue<std::pair<int, char>> moves;
-	Dir dir;
-	int time;
+	std::pair<int, int> taxi;
+	std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>> customers;
+	int energy;
 
 	std::pair<int, int> right = std::pair<int, int>{0, 1};
 	std::pair<int, int> left = std::pair<int, int>{ 0, -1 };
 	std::pair<int, int> up = std::pair<int, int>{ -1, 0 };
 	std::pair<int, int> down = std::pair<int, int>{ 1, 0 };
+	
+	std::vector<std::pair<int, int>> directions = { right,left,up,down };
+
 
 };
 
@@ -208,9 +350,8 @@ int main()
 
 
 	board b{};
+	//b.print();
 	std::cout << b.simulateall() << std::endl;
-
-
 }
 
 // 프로그램 실행: <Ctrl+F5> 또는 [디버그] > [디버깅하지 않고 시작] 메뉴
