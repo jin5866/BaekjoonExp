@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <queue>
+#include<stack>
 #include<algorithm>
 #include <vector>
 #include <utility>
@@ -19,339 +20,229 @@ enum class Dir : int {
 	down
 };
 
-bool operator== (std::pair<int, int>& a, std::pair<int, int>& b) {
-	return (a.first == b.first) && (a.second == b.second);
-}
 
-std::pair<int, int> operator+ (std::pair<int, int>& a, std::pair<int, int>& b) {
-	return std::pair<int, int>{a.first + b.first, a.second + b.second};
-}
+class machine {
 
-class distenceboard {
 public:
-	distenceboard(int size) {
-		bo = std::vector<std::vector<std::pair<int, bool>>>(size, std::vector<std::pair<int, bool>>(size, { -1 ,false}));
-	}
-
-	int getDis(const std::pair<int, int>& pos) {
-		return bo[pos.first - 1][pos.second - 1].first;
-	}
-
-	void setDis(const std::pair<int, int>& pos, int data) {
-		bo[pos.first - 1][pos.second - 1].first = data;
-	}
-
-	bool getS(const std::pair<int, int>& pos) {
-		return bo[pos.first - 1][pos.second - 1].second;
-	}
-
-	void setS(const std::pair<int, int>& pos, bool data) {
-		bo[pos.first - 1][pos.second - 1].second = data;
-	}
-
-	distenceboard(distenceboard&) = default;
-	distenceboard(distenceboard&&) = default;
-	distenceboard& operator= (distenceboard&) = default;
-	distenceboard& operator= (distenceboard&&) = default;
-
-
-	void print() {
-		for (auto& e : bo) {
-			for (auto& c : e) {
-				std::cout << c.first;
-			}
-			std::cout << std::endl;
-		}
-	}
-
-	std::vector<std::vector<std::pair<int,bool>>> bo;
-};
-
-
-
-
-class board {
-	
-public :
-	board() {
-		int customsnum;
-		std::cin >> size;
-		std::cin >> customsnum;
-		std::cin >> energy;
-
-		bo = std::vector<std::vector<int>>( size, std::vector<int>(size,0) );
-
-		for (auto& e : bo) {
-			for (auto& i : e) {
-				std::cin >> i;
-			}
-		}
-		std::cin >> taxi.first;
-		std::cin >> taxi.second;
-
-		customers = std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>(customsnum);
-
-		for (auto& cu : customers) {
-			std::cin >> cu.first.first;
-			std::cin >> cu.first.second;
-			std::cin >> cu.second.first;
-			std::cin >> cu.second.second;
-
-			//set(cu.first.first, cu.first.second, 2);
-		}
-	}
-
-	std::pair<std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>::iterator,int> findcustomer(const std::pair<int, int>& start) {
+	machine(int memsize) : mem( memsize ,0) {
 		
-		distenceboard db(size);
-		std::vector<std::pair<int, int>> Q{};
+	}
 
-		db.setDis(start, 0);
-		Q.push_back(start);
-		while (Q.size() > 0) {
-
-			std::vector<std::pair<int, int>>::iterator now;
-			now = Q.begin();
-			int min = db.getDis(now[0]);
-			for (auto s = Q.begin(); s != Q.end(); s++) {
-				if (min > db.getDis(s[0])) {
-					min = db.getDis(s[0]);
-					now = s;
-				}
-			}
-
-			if (now == Q.end()) {
-				return { customers.end(),-1 };
-			}
-
-			std::vector<std::pair<int, int>> tmp{};
-
-			for (auto& dir : directions) {
-				auto next = now[0] + dir;
-				if (next.first > 0 && next.first <= size && next.second > 0 && next.second <= size) {
-
-					if (db.getS(now[0])) {
-						continue;
-					}
-
-					if (get(next) != 1) {
-						int nowdis = db.getDis(now[0]);
-						if ((db.getDis(next) == -1) || (db.getDis(next) > (nowdis + 1))) {
-							db.setDis(next, nowdis + 1);
-						}
-
-						if (std::find_if(Q.begin(), Q.end(), [&, Q](std::pair<int, int>& a) {return (a.first == next.first) && (a.second == next.second); }) == Q.end()) {
-							tmp.push_back(next);
-						}
-					}
-
-				}
-			}
-
-
-
-			db.setS(now[0], true);
-			Q.erase(now);
-
-			for (auto& i : tmp) {
-				Q.push_back(i);
-			}
-		}
-
-		//db.print();
-
-		int min = db.getDis(customers.begin()[0].first);
-		auto mincu = customers.begin();
-
-		for (auto cu = customers.begin(); cu != customers.end(); cu++) {
-			if (min > db.getDis(cu[0].first)) {
-				min = db.getDis(cu[0].first);
-				mincu = cu;
-			}
-			else if (min == db.getDis(cu[0].first)) {
-				if (mincu[0].first > cu[0].first) {
-					min = db.getDis(cu[0].first);
-					mincu = cu;
-				}
-				else if (mincu[0].first == cu[0].first) {
-					if (mincu[0].second > cu[0].second) {
-						min = db.getDis(cu[0].first);
-						mincu = cu;
-					}
-				}
-			}
-		}
-
-		if (min > energy) {
-			return { customers.end(),-1 };
-		}
-		else
-		{
-			return {mincu, min};
-		}
-
+	machine() {
 
 	}
 
-	int findroute(const std::pair<int,int>& start, const std::pair<int, int>& dest,int energy) {
-		distenceboard db(size);
-		std::vector<std::pair<int, int>> Q{};
-		
-		db.setDis(start, 0);
-		Q.push_back(start);
-		while (Q.size() > 0) {
 
-			std::vector<std::pair<int, int>>::iterator now;
-			now = Q.begin();
-			int min = db.getDis(now[0]);
-			for (auto s = Q.begin(); s != Q.end(); s++) {
-				if (min > db.getDis(s[0]) ){
-					min = db.getDis(s[0]);
-					now = s;
-				}
+	machine(machine&) = default;
+	machine(machine&&) = default;
+	machine& operator= (machine&) = default;
+	machine& operator= (machine&&) = default;
+
+	void setcom(const std::vector<char>& comm) {
+		std::stack<int> opened{};
+
+		for (int i = 0; i < comm.size(); i++) {
+			switch (comm[i])
+			{
+			case '-':
+				com.push_back({ commandtype::pminus,0 });
+				break;
+			case '+':
+				com.push_back({ commandtype::ppuls,0 });
+				break;
+			case '<':
+				com.push_back({ commandtype::pleft,0 });
+				break;
+			case '>':
+				com.push_back({ commandtype::pright,0 });
+				break;
+			case '[':
+				com.push_back({ commandtype::jumprightifzero,0 });
+				opened.push(i);
+				break;
+			case ']':
+			{com.push_back({ commandtype::jumpleftifnotzero,0 });
+			int pair = opened.top();
+			opened.pop();
+			com[pair].data = i;
+			com[i].data = pair; }
+				break;
+			case '.':
+				com.push_back({ commandtype::print,0 });
+				break;
+			case ',':
+				com.push_back({ commandtype::read,0 });
+				break;
+			default:
+				break;
 			}
+		}
+	}
 
-			if (now == Q.end()) {
-				return -1;
-			}
+	void setinput(const std::vector<char>& input)  {
+		this->input = std::vector<char>(input);
+		nowread = 0;
+	}
 
-			std::vector<std::pair<int, int>> tmp{};
+	void run() {
+		std::vector<int> sample{};
 
-			for (auto& dir : directions) {
-				auto next = now[0] + dir;
-				if (next.first > 0 && next.first <= size && next.second > 0 && next.second <= size) {	
+		while (nowrun < com.size()&&counter <= 100000000) {
+			runonce();
+			++counter;
 
-					if (db.getS(now[0])) {
-						continue;
-					}
-
-					if (get(next) != 1) {
-						int nowdis = db.getDis(now[0]);
-						if ((db.getDis(next) == -1) || (db.getDis(next) > (nowdis + 1))) {
-							db.setDis(next, nowdis + 1);
-						}
-
-						if (std::find_if(Q.begin(), Q.end(), [&, Q](std::pair<int, int>& a) {return (a.first == next.first) && (a.second == next.second); }) == Q.end()) {
-							tmp.push_back(next);
-						}
-					}
-
-				}
-			}
-
-
-
-			db.setS(now[0], true);
-			Q.erase(now);
-
-			for (auto& i : tmp) {
-				Q.push_back(i);
+			if (counter % 9803 == 0) {
+				sample.push_back(nowrun);
 			}
 		}
 
-		//db.print();
+		if (counter > 50000000) {
+			int max = 0;
+			
+			if (com[lastloop].lastcall <= 50000000) {
+				for (int i = lastloop - 1; i >= 0; i--) {
+					if (com[i].ctype == commandtype::jumpleftifnotzero && com[i].lastcall >= 50000000) {
+						lastloop = i;
+						break;
+					}
+				}
+			}
 
-		int consume = db.getDis(dest);
-
-		if (consume > energy) {
-			return -1;
+			std::cout << "Loops " << com[lastloop].data << " " << lastloop << std::endl;
 		}
 		else {
-			return consume;
+			std::cout << "Terminates"<<std::endl;
 		}
 	}
 
-	
-	board(board&) = default;
-	board(board&&) = default;
-	board& operator= (board&) = default;
-	board& operator= (board&&) = default;
-
-	
-	void print() {
-		for (auto& e : bo) {
-			for (auto& c : e) {
-				std::cout << c;
-			}
-			std::cout << std::endl;
-		}
-	}
-
-	int get(const std::pair<int, int>& pos) {
-		return get(pos.first, pos.second);
-	}
-
-	void set(const std::pair<int, int>& pos, int data) {
-		set(pos.first, pos.second, data);
-	}
-
-	
-	int get(int a, int b) {
-		return bo[a - 1][b - 1];
-	}
-
-	void set(int a, int b, int data) {
-		bo[a - 1][b - 1] = data;
-	}
-
-	int simulateall() {
-		while (!customers.empty()) {
-			auto a = findcustomer(taxi);
-			auto& cus = a.first;
-			int consumed = a.second;
-
-			//debugprint(consumed);
-
-			if (consumed == -1) {
-				return -1;
-			}
-
-			taxi = cus[0].first;
-			energy -= consumed;
-
-			int consumewithcustomer = findroute(taxi, cus[0].second,energy);
-			//debugprint(consumewithcustomer);
-			if (consumewithcustomer == -1) {
-				return -1;
-			}
-			
-			energy += consumewithcustomer;
-
-			taxi = cus[0].second;
-			customers.erase(cus);
-		}
-
-		return energy;
-	}
 
 
 private:
-	std::vector<std::vector<int>> bo;
-	int size;
-	std::pair<int, int> taxi;
-	std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>> customers;
-	int energy;
 
-	std::pair<int, int> right = std::pair<int, int>{0, 1};
-	std::pair<int, int> left = std::pair<int, int>{ 0, -1 };
-	std::pair<int, int> up = std::pair<int, int>{ -1, 0 };
-	std::pair<int, int> down = std::pair<int, int>{ 1, 0 };
+	enum class commandtype : int {
+		pminus = 0,
+		ppuls,
+		pleft,
+		pright,
+		jumprightifzero,
+		jumpleftifnotzero,
+		print,
+		read
+	};
+	struct command {
+		command(commandtype ctype, int data) : ctype(ctype) ,data(data){
+
+		}
+
+		commandtype ctype;
+		int data;
+		int lastcall = 0;
+	};
+	std::vector<char> mem;
+	std::vector<command> com;
+	std::vector<char> input;
+	int nowread;
+
+	int pointer = 0;
+	int nowrun = 0;
+	int counter = 0;
 	
-	std::vector<std::pair<int, int>> directions = { right,left,up,down };
+	int lastloop = 0;
 
+	void runonce() {
+		switch (com[nowrun].ctype)
+		{
+		case machine::commandtype::pminus:
+			--(mem[pointer]);
+			break;
+		case machine::commandtype::ppuls:
+			++(mem[pointer]);
+			break;
+		case machine::commandtype::pleft:
+			pointer--;
+			if (pointer < 0) {
+				pointer += mem.size();
+			}
+			break;
+		case machine::commandtype::pright:
+			pointer = (pointer + 1) % mem.size();
+			break;
+		case machine::commandtype::jumprightifzero:
+			if (mem[pointer] == 0) {
+				nowrun = (com[nowrun].data );
+			}
+			break;
+		case machine::commandtype::jumpleftifnotzero:
+			if (mem[pointer] != 0) {
+				if (lastloop < nowrun) {
+					lastloop = nowrun;
+				}
+				com[nowrun].lastcall = counter;
+				nowrun = (com[nowrun].data );
+				
+			}
+			break;
+		case machine::commandtype::print:
+			//std::cout << mem[pointer];
+			break;
+		case machine::commandtype::read:
+			if (nowread < input.size()) {
+				mem[pointer] = input[nowread];
+				nowread++;
+			}
+			else
+			{
+				mem[pointer] = 255;
+			}
+			break;
+		default:
+			break;
+		}
 
+		++nowrun;
+	}
 };
-
 
 
 
 int main()
 {
+	int mc;
+	std::cin >> mc;
+
+	std::vector<machine> machs(mc);
+	
+	for (auto& mach : machs) {
+		int memsize;
+		int commsize;
+		int inputsize;
+		std::cin >> memsize;
+		std::cin >> commsize;
+		std::cin >> inputsize;
+
+		std::vector<char> comm(commsize);
+		std::vector<char> input(inputsize);
+
+		for (char& com : comm) {
+			std::cin >> com;
+		}
+
+		for (char& in : input) {
+			std::cin >> in;
+		}
+
+		mach = machine(memsize);
+
+		mach.setcom(comm);
+		mach.setinput(input);
+
+	}
+
+	for (auto& mach : machs) {
+		mach.run();
+	}
 
 
-	board b{};
-	//b.print();
-	std::cout << b.simulateall() << std::endl;
 }
 
 // 프로그램 실행: <Ctrl+F5> 또는 [디버그] > [디버깅하지 않고 시작] 메뉴
