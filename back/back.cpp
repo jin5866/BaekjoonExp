@@ -7,242 +7,277 @@
 #include<algorithm>
 #include <vector>
 #include <utility>
+#include<set>
 
 template<typename T>
 void debugprint(T t) {
 	//std::cout << t << std::endl;
 }
 
-enum class Dir : int {
-	right = 0 ,
-	left,
-	up,
-	down
+class sets {
+public:
+	sets(int size) {
+		tofind = std::vector<int>(size);
+	}
+
+	void makeset(int a) {
+		tofind[a] = S.size();
+		auto tmp = std::set<int>();
+		tmp.insert(a);
+		S.push_back(tmp);
+	}
+
+	std::vector<std::set<int>>::iterator findset(int a){
+		return (S.begin() + tofind[a]);
+	}
+
+	void unionset(int a, int b){
+		int setapos = tofind[a];
+		auto& seta = findset(a)[0];
+		auto& setb = findset(b)[0];
+
+		seta.insert(setb.begin(), setb.end());
+
+		for (int i : setb) {
+			tofind[i] = setapos;
+		}
+
+		setb.erase(setb.begin(), setb.end());
+	};
+
+	std::vector<std::set<int>> getsets () {
+		std::vector<std::set<int>> result;
+
+		for (auto& set : S) {
+			if (set.size() > 0) {
+				result.push_back({ set });
+			}
+		}
+
+		return result;
+	}
+private:
+	std::vector<std::set<int>> S;
+	std::vector<int> tofind;
 };
 
 
-class machine {
 
+class vertax {
 public:
-	machine(int memsize) : mem( memsize ,0) {
-		
+	vertax() : vertax(0, 0, 0) {}
+	vertax(int e1, int e2, int v) : edge1 (e1), edge2(e2),value(v){
+	}
+	
+	void print() {
+		std::cout << edge1 << " " << edge2 << " " << value << std::endl;
 	}
 
-	machine() {
+	vertax(const vertax&) = default;
+	vertax(vertax&&) = default;
+	vertax& operator= (const vertax&) = default;
+	vertax& operator= (vertax&&) = default;
 
+
+	int edge1;
+	int edge2;
+	int value;
+
+};
+struct cmpvertax {
+	bool operator()(vertax& a, vertax& b) {
+		return a.value > b.value;
 	}
+};
 
+class map {
+public:
+	map() {
+		int n;
+		int m;
+		std::cin >> n;
+		std::cin >> m;
+		this ->n = n;
+		this->m = m;
+		ma = std::vector<std::vector<int>>(n, std::vector<int>(m, 0));
 
-	machine(machine&) = default;
-	machine(machine&&) = default;
-	machine& operator= (machine&) = default;
-	machine& operator= (machine&&) = default;
-
-	void setcom(const std::vector<char>& comm) {
-		std::stack<int> opened{};
-
-		for (int i = 0; i < comm.size(); i++) {
-			switch (comm[i])
-			{
-			case '-':
-				com.push_back({ commandtype::pminus,0 });
-				break;
-			case '+':
-				com.push_back({ commandtype::ppuls,0 });
-				break;
-			case '<':
-				com.push_back({ commandtype::pleft,0 });
-				break;
-			case '>':
-				com.push_back({ commandtype::pright,0 });
-				break;
-			case '[':
-				com.push_back({ commandtype::jumprightifzero,0 });
-				opened.push(i);
-				break;
-			case ']':
-			{com.push_back({ commandtype::jumpleftifnotzero,0 });
-			int pair = opened.top();
-			opened.pop();
-			com[pair].data = i;
-			com[i].data = pair; }
-				break;
-			case '.':
-				com.push_back({ commandtype::print,0 });
-				break;
-			case ',':
-				com.push_back({ commandtype::read,0 });
-				break;
-			default:
-				break;
-			}
-		}
-	}
-
-	void setinput(const std::vector<char>& input)  {
-		this->input = std::vector<char>(input);
-		nowread = 0;
-	}
-
-	void run() {
-		std::vector<int> sample{};
-
-		while (nowrun < com.size()&&counter <= 100000000) {
-			runonce();
-			++counter;
-
-			if (counter % 9803 == 0) {
-				sample.push_back(nowrun);
-			}
-		}
-
-		if (counter > 50000000) {
-			int max = 0;
-			
-			if (com[lastloop].lastcall <= 50000000) {
-				for (int i = lastloop - 1; i >= 0; i--) {
-					if (com[i].ctype == commandtype::jumpleftifnotzero && com[i].lastcall >= 50000000) {
-						lastloop = i;
-						break;
-					}
+		for (auto& e : ma) {
+			for (int& i : e) {
+				std::cin >> i;
+				if (i == 0) {
+					i = -1;
+				}
+				else {
+					i = -2;
 				}
 			}
-
-			std::cout << "Loops " << com[lastloop].data << " " << lastloop << std::endl;
 		}
-		else {
-			std::cout << "Terminates"<<std::endl;
+
+		int islandnum = 0;
+		for (int i = 0; i < n; i++) {
+			for (int j = 0; j < m; j++) {
+				if (ma[i][j] == -2) {
+					
+					this->givenumber(i, j, islandnum);
+					++islandnum;
+					islands.push_back({ i,j });
+				}
+			}
+		}
+
+	}
+
+	map(const map&) = default;
+	map(map&&) = default;
+	map& operator= (const map&) = default;
+	map& operator= (map&&) = default;
+
+	void print() {
+		for (auto& e : ma) {
+			for (int& i : e) {
+				std::cout << i;
+			}
+			std::cout << std::endl;
 		}
 	}
 
+	std::vector<vertax> getvertax() {
+		std::vector<vertax> result;
+		for (int i = 0; i < n; i++) {
+			int nowisland = -1;
+			int length = 0;
+			for (int j = 0; j < m; j++) {
+				if (ma[i][j] != -1) {
+					//if island;
+					if (nowisland != -1) {
+						//if before island is
+						if (nowisland != ma[i][j]) {
+							if (length >= 2) {
+								result.push_back({ nowisland,ma[i][j],length });
+							}
+						}
+					}
+					length = 0;
+					nowisland = ma[i][j];
 
+				}
+				else {
+					//if sea;
+					++length;
+				}
+			}
+		}
+
+		for (int j = 0; j < m; j++) {
+			int nowisland = -1;
+			int length = 0;
+			for (int i = 0; i < n; i++) {
+				if (ma[i][j] != -1) {
+					//if island;
+					if (nowisland != -1) {
+						//if before island is
+						if (nowisland != ma[i][j]) {
+							if (length >= 2) {
+								result.push_back({ nowisland,ma[i][j],length });
+							}
+						}
+					}
+					length = 0;
+					nowisland = ma[i][j];
+
+				}
+				else {
+					//if sea;
+					++length;
+				}
+			}
+		}
+
+		return result;
+	}
+
+	int getislansnum() {
+		return islands.size();
+	}
 
 private:
+	std::vector<std::vector<int>> ma;
+	std::vector<std::pair<int, int>> islands{};
 
-	enum class commandtype : int {
-		pminus = 0,
-		ppuls,
-		pleft,
-		pright,
-		jumprightifzero,
-		jumpleftifnotzero,
-		print,
-		read
-	};
-	struct command {
-		command(commandtype ctype, int data) : ctype(ctype) ,data(data){
+	int n;
+	int m;
 
+	void givenumber(int a, int b, int num) {
+		ma[a][b] = num;
+		if (a > 0) {
+			if (ma[a - 1][b] == -2) {
+				this->givenumber(a - 1, b, num);
+			}
 		}
-
-		commandtype ctype;
-		int data;
-		int lastcall = 0;
-	};
-	std::vector<char> mem;
-	std::vector<command> com;
-	std::vector<char> input;
-	int nowread;
-
-	int pointer = 0;
-	int nowrun = 0;
-	int counter = 0;
-	
-	int lastloop = 0;
-
-	void runonce() {
-		switch (com[nowrun].ctype)
-		{
-		case machine::commandtype::pminus:
-			--(mem[pointer]);
-			break;
-		case machine::commandtype::ppuls:
-			++(mem[pointer]);
-			break;
-		case machine::commandtype::pleft:
-			pointer--;
-			if (pointer < 0) {
-				pointer += mem.size();
+		if (b > 0) {
+			if (ma[a][b - 1] == -2) {
+				this->givenumber(a , b -1, num);
 			}
-			break;
-		case machine::commandtype::pright:
-			pointer = (pointer + 1) % mem.size();
-			break;
-		case machine::commandtype::jumprightifzero:
-			if (mem[pointer] == 0) {
-				nowrun = (com[nowrun].data );
-			}
-			break;
-		case machine::commandtype::jumpleftifnotzero:
-			if (mem[pointer] != 0) {
-				if (lastloop < nowrun) {
-					lastloop = nowrun;
-				}
-				com[nowrun].lastcall = counter;
-				nowrun = (com[nowrun].data );
-				
-			}
-			break;
-		case machine::commandtype::print:
-			//std::cout << mem[pointer];
-			break;
-		case machine::commandtype::read:
-			if (nowread < input.size()) {
-				mem[pointer] = input[nowread];
-				nowread++;
-			}
-			else
-			{
-				mem[pointer] = 255;
-			}
-			break;
-		default:
-			break;
 		}
-
-		++nowrun;
+		if (a <n-1) {
+			if (ma[a+1][b] == -2) {
+				this->givenumber(a + 1, b, num);
+			}
+		}
+		if (b <m-1) {
+			if (ma[a][b + 1] == -2) {
+				this->givenumber(a , b + 1, num);
+			}
+		}
 	}
+	
 };
-
-
 
 int main()
 {
-	int mc;
-	std::cin >> mc;
-
-	std::vector<machine> machs(mc);
+	map m{};
+	int result = 0;
 	
-	for (auto& mach : machs) {
-		int memsize;
-		int commsize;
-		int inputsize;
-		std::cin >> memsize;
-		std::cin >> commsize;
-		std::cin >> inputsize;
+	
+	//m.print();
+	auto ver = m.getvertax();
+	//m.print();
 
-		std::vector<char> comm(commsize);
-		std::vector<char> input(inputsize);
+	std::priority_queue<vertax, std::vector<vertax>, cmpvertax> pque{};
 
-		for (char& com : comm) {
-			std::cin >> com;
-		}
-
-		for (char& in : input) {
-			std::cin >> in;
-		}
-
-		mach = machine(memsize);
-
-		mach.setcom(comm);
-		mach.setinput(input);
-
+	for (auto& v : ver) {
+		//v.print();
+		pque.push(v);
 	}
-
-	for (auto& mach : machs) {
-		mach.run();
+	int size = m.getislansnum();
+	sets S{size};
+	for (int i = 0; i < size; i++) {
+		S.makeset(i);
 	}
 
 
+	while (!pque.empty()) {
+		auto& now = pque.top();
+		
+		if (S.findset(now.edge1) != S.findset(now.edge2)) {
+			S.unionset(now.edge1, now.edge2);
+
+			result += now.value;
+		}
+
+		pque.pop();
+	}
+
+	auto re = S.getsets();
+
+	if (re.size() > 1) {
+		std::cout << -1;
+	}
+	else {
+		std::cout << result;
+	}
+
+	
 }
 
 // 프로그램 실행: <Ctrl+F5> 또는 [디버그] > [디버깅하지 않고 시작] 메뉴
