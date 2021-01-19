@@ -11,273 +11,223 @@
 
 template<typename T>
 void debugprint(T t) {
-	//std::cout << t << std::endl;
+	std::cout << t;
 }
 
-class sets {
+class graph {
 public:
-	sets(int size) {
-		tofind = std::vector<int>(size);
+	graph(int size) : size(size) {
+		capacity = std::vector<std::vector<int>>(size, std::vector<int>(size, 0));
+		flow = std::vector<std::vector<int>>(size, std::vector<int>(size, 0));
+		parent = std::vector<int>(size, -1);
+	}
+	graph(const graph&) = default;
+	graph(graph&&) = default;
+	graph& operator = (const graph&) = default;
+	graph& operator = (graph&&) = default;
+
+	int residual(int from, int to) {
+		return capacity[from][to] - flow[from][to];
 	}
 
-	void makeset(int a) {
-		tofind[a] = S.size();
-		auto tmp = std::set<int>();
-		tmp.insert(a);
-		S.push_back(tmp);
+	void setcapacity(int from, int to, int value) {
+		capacity[from][to] = value;
+		//capacity[to][from] = -value;
 	}
 
-	std::vector<std::set<int>>::iterator findset(int a){
-		return (S.begin() + tofind[a]);
+	void setflow(int from, int to, int value) {
+		flow[from][to] = value;
+		flow[to][from] = -value;
 	}
 
-	void unionset(int a, int b){
-		int setapos = tofind[a];
-		auto& seta = findset(a)[0];
-		auto& setb = findset(b)[0];
-
-		seta.insert(setb.begin(), setb.end());
-
-		for (int i : setb) {
-			tofind[i] = setapos;
-		}
-
-		setb.erase(setb.begin(), setb.end());
-	};
-
-	std::vector<std::set<int>> getsets () {
-		std::vector<std::set<int>> result;
-
-		for (auto& set : S) {
-			if (set.size() > 0) {
-				result.push_back({ set });
-			}
-		}
-
-		return result;
-	}
-private:
-	std::vector<std::set<int>> S;
-	std::vector<int> tofind;
-};
-
-
-
-class vertax {
-public:
-	vertax() : vertax(0, 0, 0) {}
-	vertax(int e1, int e2, int v) : edge1 (e1), edge2(e2),value(v){
-	}
-	
-	void print() {
-		std::cout << edge1 << " " << edge2 << " " << value << std::endl;
+	int getflow(int from, int to) {
+		return flow[from][to];
 	}
 
-	vertax(const vertax&) = default;
-	vertax(vertax&&) = default;
-	vertax& operator= (const vertax&) = default;
-	vertax& operator= (vertax&&) = default;
-
-
-	int edge1;
-	int edge2;
-	int value;
-
-};
-struct cmpvertax {
-	bool operator()(vertax& a, vertax& b) {
-		return a.value > b.value;
-	}
-};
-
-class map {
-public:
-	map() {
-		int n;
-		int m;
-		std::cin >> n;
-		std::cin >> m;
-		this ->n = n;
-		this->m = m;
-		ma = std::vector<std::vector<int>>(n, std::vector<int>(m, 0));
-
-		for (auto& e : ma) {
-			for (int& i : e) {
-				std::cin >> i;
-				if (i == 0) {
-					i = -1;
-				}
-				else {
-					i = -2;
-				}
-			}
-		}
-
-		int islandnum = 0;
-		for (int i = 0; i < n; i++) {
-			for (int j = 0; j < m; j++) {
-				if (ma[i][j] == -2) {
-					
-					this->givenumber(i, j, islandnum);
-					++islandnum;
-					islands.push_back({ i,j });
-				}
-			}
-		}
-
-	}
-
-	map(const map&) = default;
-	map(map&&) = default;
-	map& operator= (const map&) = default;
-	map& operator= (map&&) = default;
-
-	void print() {
-		for (auto& e : ma) {
-			for (int& i : e) {
+	void printnode() {
+		for (auto& f : capacity) {
+			for (int i : f) {
 				std::cout << i;
 			}
 			std::cout << std::endl;
 		}
 	}
 
-	std::vector<vertax> getvertax() {
-		std::vector<vertax> result;
-		for (int i = 0; i < n; i++) {
-			int nowisland = -1;
-			int length = 0;
-			for (int j = 0; j < m; j++) {
-				if (ma[i][j] != -1) {
-					//if island;
-					if (nowisland != -1) {
-						//if before island is
-						if (nowisland != ma[i][j]) {
-							if (length >= 2) {
-								result.push_back({ nowisland,ma[i][j],length });
-							}
-						}
-					}
-					length = 0;
-					nowisland = ma[i][j];
-
-				}
-				else {
-					//if sea;
-					++length;
-				}
+	void printflow() {
+		for (auto& f : flow) {
+			for (int i : f) {
+				std::cout << i;
 			}
+			std::cout << std::endl;
 		}
-
-		for (int j = 0; j < m; j++) {
-			int nowisland = -1;
-			int length = 0;
-			for (int i = 0; i < n; i++) {
-				if (ma[i][j] != -1) {
-					//if island;
-					if (nowisland != -1) {
-						//if before island is
-						if (nowisland != ma[i][j]) {
-							if (length >= 2) {
-								result.push_back({ nowisland,ma[i][j],length });
-							}
-						}
-					}
-					length = 0;
-					nowisland = ma[i][j];
-
-				}
-				else {
-					//if sea;
-					++length;
-				}
-			}
-		}
-
-		return result;
 	}
 
-	int getislansnum() {
-		return islands.size();
+	void resetflow() {
+		flow = std::vector<std::vector<int>>(size, std::vector<int>(size, 0));
 	}
+
+	std::pair < std::vector<std::vector<int>>, int> findflow(int start, int end) {
+
+		int total = 0;
+		while (true) {
+			std::fill(parent.begin(), parent.end(), -1);
+			std::queue<int> Q;
+
+			Q.push(start);
+			parent[start] = start;
+
+			while ((!Q.empty()) && parent[end] == -1) {
+				int now = Q.front();
+				Q.pop();
+
+
+
+				for (int other = 0; other < capacity[now].size(); other++) {
+					if (this->residual(now, other) > 0 && parent[other] == -1) {
+						parent[other] = now;
+						Q.push(other);
+					}
+				}
+			}
+
+			if (parent[end] == -1) {
+				break;
+			}
+
+			int min = this->residual(parent[end], end);
+
+			for (int p = end; p != start; p = parent[p]) {
+				min = std::min(min, this->residual(parent[p], p));
+			}
+
+			for (int p = end; p != start; p = parent[p]) {
+				flow[parent[p]][p] += min;
+				flow[p][parent[p]] -= min;
+			}
+
+			//total += min;
+		}
+
+		for (int i : flow[start]) {
+			total += i;
+		}
+
+		return { flow ,total };
+	}
+
 
 private:
-	std::vector<std::vector<int>> ma;
-	std::vector<std::pair<int, int>> islands{};
-
-	int n;
-	int m;
-
-	void givenumber(int a, int b, int num) {
-		ma[a][b] = num;
-		if (a > 0) {
-			if (ma[a - 1][b] == -2) {
-				this->givenumber(a - 1, b, num);
-			}
-		}
-		if (b > 0) {
-			if (ma[a][b - 1] == -2) {
-				this->givenumber(a , b -1, num);
-			}
-		}
-		if (a <n-1) {
-			if (ma[a+1][b] == -2) {
-				this->givenumber(a + 1, b, num);
-			}
-		}
-		if (b <m-1) {
-			if (ma[a][b + 1] == -2) {
-				this->givenumber(a , b + 1, num);
-			}
-		}
-	}
-	
+	std::vector<std::vector<int>> capacity;
+	std::vector<std::vector<int>> flow;
+	std::vector<int> parent;
+	int size;
 };
 
 int main()
 {
-	map m{};
-	int result = 0;
-	
-	
-	//m.print();
-	auto ver = m.getvertax();
-	//m.print();
+	int jiminnum;
+	int hansunum;
+	int gamecount = 0;
+	int hansucount = 0;
 
-	std::priority_queue<vertax, std::vector<vertax>, cmpvertax> pque{};
+	std::cin >> jiminnum;
+	std::cin >> hansunum;
 
-	for (auto& v : ver) {
-		//v.print();
-		pque.push(v);
-	}
-	int size = m.getislansnum();
-	sets S{size};
-	for (int i = 0; i < size; i++) {
-		S.makeset(i);
+	std::vector<int> jiminmaxrun(jiminnum);
+	std::vector<int> hansumaxrun(hansunum);
+
+	for (int& i : jiminmaxrun)
+	{
+		std::cin >> i;
+		gamecount += i;
 	}
 
+	for (int& i : hansumaxrun)
+	{
+		std::cin >> i;
+		hansucount += i;
+	}
 
-	while (!pque.empty()) {
-		auto& now = pque.top();
-		
-		if (S.findset(now.edge1) != S.findset(now.edge2)) {
-			S.unionset(now.edge1, now.edge2);
+	if (gamecount != hansucount) {
+		std::cout << -1 << std::endl;
+		return 0;
+	}
 
-			result += now.value;
+	int nodenum = 2 + jiminnum + hansunum;
+
+	graph g{ nodenum };
+
+	int startnode = 0;
+	int endnode = nodenum - 1;
+
+	std::vector<int> jiminnodes(jiminnum);
+	for (int i = 0; i < jiminnum; i++) {
+		jiminnodes[i] = 1 + i;
+		g.setcapacity(startnode, 1 + i, jiminmaxrun[i]);
+	}
+
+	std::vector<int> hansumnodes(hansunum);
+	for (int i = 0; i < hansunum; i++) {
+		hansumnodes[i] = 1 + jiminnum + i;//endnode - i - 1;//
+		g.setcapacity(1 + jiminnum + i, endnode, hansumaxrun[i]);
+	}
+	for (int from : jiminnodes) {
+		for (int to : hansumnodes) {
+			g.setcapacity(from, to, 1);
 		}
+	}
+	//g.printnode();
+	auto result = g.findflow(startnode, endnode);
+	//g.printflow();
 
-		pque.pop();
+
+
+	if (result.second != gamecount) {
+
+		std::cout << -1 << std::endl;
+		return 0;
+
 	}
 
-	auto re = S.getsets();
 
-	if (re.size() > 1) {
-		std::cout << -1;
-	}
-	else {
-		std::cout << result;
+	for (int ji : jiminnodes) {
+		for (int han : hansumnodes) {
+			if (result.first[ji][han] == 1) {
+				graph origin{ g };
+
+				g.setcapacity(ji, han, 0);
+				g.setflow(ji, han, 0);
+				int flowtmp = g.getflow(startnode, ji);
+				int flowtmp2 = g.getflow(han, endnode);
+				g.setflow(startnode, ji, flowtmp - 1);
+				g.setflow(han, endnode, flowtmp2 - 1);
+
+
+
+				auto tmpresult = g.findflow(startnode, endnode);
+
+				if (tmpresult.second == gamecount) {
+					result = tmpresult;
+				}
+				else {
+					g = std::move(origin);
+				}
+			}
+			else if (result.first[ji][han] == 0) {
+				g.setcapacity(ji, han, 0);
+			}
+
+		}
 	}
 
-	
+	//print;
+	for (int ji : jiminnodes) {
+		for (int han : hansumnodes) {
+			std::cout << result.first[ji][han];
+		}
+		std::cout << std::endl;
+	}
+	return 0;
 }
 
 // 프로그램 실행: <Ctrl+F5> 또는 [디버그] > [디버깅하지 않고 시작] 메뉴
