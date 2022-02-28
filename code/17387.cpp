@@ -1,0 +1,74 @@
+// back.cpp : 이 파일에는 'main' 함수가 포함됩니다. 거기서 프로그램 실행이 시작되고 종료됩니다.
+// 
+
+#include <iostream>
+#include<iomanip>
+#include<bitset>
+#include <queue>
+//#include<priority_queue>
+#include<stack>
+#include<algorithm>
+#include <vector>
+#include <utility>
+#include<set>
+#include<unordered_set>
+#include<map>
+#include<memory>
+#include<string>
+#include<algorithm>
+
+template<typename T>
+void debugprint(T t) {
+	std::cout << t;
+}
+
+
+long long ccw(std::pair<long long,long long> a,std::pair<long long,long long> b,std::pair<long long,long long> c){
+	long long ret = (b.second - a.second) * (c.first - b.first) - (b.first - a.first) * (c.second - b.second);
+	if (ret == 0) return 0;
+	return ret > 0 ? 1 : -1;
+}
+
+bool result(std::pair<long long,long long> a,std::pair<long long,long long> b,std::pair<long long,long long> c,std::pair<long long,long long> d){
+	long long ab = ccw(a, b, c) * ccw(a, b, d);
+	long long cd = ccw(c, d, a) * ccw(c, d, b);
+
+	if(ab==0 && cd == 0){
+		if (a>b) std::swap(a, b);
+		if (c>d) std::swap(c, d);
+		if (a>c) {
+			std::swap(a, c);
+			std::swap(b, d);
+		}
+
+		if (a==c || a==d) return true;
+		if (b==c || b==d) return true;
+		return c<=b;
+	}
+
+	return ab<=0 && cd <= 0;
+}
+
+int main() {
+	std::ios::sync_with_stdio(false);
+	std::cout.tie(0);
+	std::cin.tie(0);
+
+	std::pair<long long, long long> a, b, c, d;
+	std::cin >> a.first >> a.second >> b.first >> b.second >> c.first >> c.second >> d.first >> d.second;
+
+	std::cout<<result(a,b,c,d)<<'\n';
+}
+
+
+
+// 프로그램 실행: <Ctrl+F5> 또는 [디버그] > [디버깅하지 않고 시작] 메뉴
+// 프로그램 디버그: <F5> 키 또는 [디버그] > [디버깅 시작] 메뉴
+
+// 시작을 위한 팁: 
+//   1. [솔루션 탐색기] 창을 사용하여 파일을 추가/관리합니다.
+//   2. [팀 탐색기] 창을 사용하여 소스 제어에 연결합니다.
+//   3. [출력] 창을 사용하여 빌드 출력 및 기타 메시지를 확인합니다.
+//   4. [오류 목록] 창을 사용하여 오류를 봅니다.
+//   5. [프로젝트] > [새 항목 추가]로 이동하여 새 코드 파일을 만들거나, [프로젝트] > [기존 항목 추가]로 이동하여 기존 코드 파일을 프로젝트에 추가합니다.
+//   6. 나중에 이 프로젝트를 다시 열려면 [파일] > [열기] > [프로젝트]로 이동하고 .sln 파일을 선택합니다.
